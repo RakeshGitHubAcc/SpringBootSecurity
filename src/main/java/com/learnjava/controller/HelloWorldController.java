@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class HelloWorldController {
-	@RequestMapping("/hello")
+	@RequestMapping("/")
 	public String hello() {
 		return "Hello Microservice started...";
 	}

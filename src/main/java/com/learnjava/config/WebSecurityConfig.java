@@ -12,8 +12,11 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.password.LdapShaPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.ldap.userdetails.LdapAuthoritiesPopulator;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.access.AccessDeniedHandler;
 
 import com.learnjava.repository.UserRepository;
 import com.learnjava.service.CustomUserDetailsService;
@@ -23,6 +26,42 @@ import com.learnjava.service.CustomUserDetailsService;
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
+	
+	@Override
+	protected void configure(HttpSecurity http) throws Exception {
+		http
+			.authorizeRequests()
+				.anyRequest().fullyAuthenticated()
+				.and()
+			.formLogin();
+	}
+	
+	@Override
+	public void configure(AuthenticationManagerBuilder auth) throws Exception {
+		auth
+			.ldapAuthentication()
+				.userDnPatterns("uid={0},ou=people")
+				.groupSearchBase("ou=groups")
+				.contextSource()
+					.url("ldap://localhost:8389/dc=springframework,dc=org")
+					.and()
+				.passwordCompare()
+					.passwordEncoder(new LdapShaPasswordEncoder())
+					.passwordAttribute("userPassword")
+					.and()
+				.ldapAuthoritiesPopulator(ldapAuthoritiesPopulator());
+	}
+
+	@Bean
+	public AccessDeniedHandler accessDeniedHandler() {
+		return new CustomAccessDeniedHandler();
+	}
+	@Bean
+	public LdapAuthoritiesPopulator ldapAuthoritiesPopulator() {
+		return new CustomLdapAuthoritiesPopulator();
+	}
+	
+/*	
 	@Autowired
     private CustomUserDetailsService customUserDetailsService;
 
@@ -35,9 +74,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
     protected void configure(HttpSecurity http) throws Exception {
         http.csrf().disable()
         	.authorizeRequests()
-        		.antMatchers("**/api/**").authenticated().anyRequest()
+        		.antMatchers("**/ /*remove api/**").authenticated().anyRequest()
         			.permitAll()
-        		.and().formLogin().permitAll();
+        		.and().formLogin().permitAll()
+        		.and().exceptionHandling().accessDeniedHandler(accessDeniedHandler());
     }
 
     private PasswordEncoder getPasswordEncoder() {
@@ -53,7 +93,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
             }
         };
 }
-	
+  */  
 	
 /*	
 	@Override
@@ -84,4 +124,5 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
         return new InMemoryUserDetailsManager(user);
     }
     */
+    
 }
